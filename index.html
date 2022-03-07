@@ -38,7 +38,23 @@ height:163px;
 z-index: 3;
 }
 
+#chart3 {
+position: absolute;
+top:338px;
+left:600px;
+width: 736px;
+height:528px;
+z-index: 2;
+}
 
+#chart4{
+position: absolute;
+top:408px;
+left:625px;
+width: 670px;
+height:450px;
+z-index: 66;
+}
 
 #chart1:after {
     content: ' ';
@@ -104,9 +120,10 @@ z-index: 3;
 </div>
 
 <div id="app">
-
+    <div id="chart3" ></div>  
     <div id="chart1" ></div>
     <div id="chart2" ></div>  
+    <div id="chart4" ></div> 
 </div>
 
 </body>
@@ -126,6 +143,7 @@ z-index: 3;
         drawTab1Chart() {
             const mychart = echarts.init(document.getElementById('chart1'))
             const mychart2 = echarts.init(document.getElementById('chart2'))
+            const mychart4 = echarts.init(document.getElementById('chart4'))
             mychart.showLoading({
                 text: 'loading',
                 color: '#c23531',
@@ -146,11 +164,24 @@ z-index: 3;
 
                             mychart.setOption(getOption(season_name));
                             mychart2.setOption(getOption1());
+                            mychart4.setOption(getOption3(season_name));
                             mychart2.on('click', (params) => {
                                 season_name = params.name
                                 mychart.setOption(getOption(season_name));
+                                mychart4.setOption(getOption3(season_name));                               
                             })
-
+                            mychart.on('timelinechanged', (params) => {
+                                       mychart4.dispatchAction({
+                                        type:'timelineChange',
+                                        currentIndex:params.currentIndex
+                                    })
+                            })
+                            mychart.on('timelineplaychanged', (params) => {
+                                       mychart4.dispatchAction({
+                                        type:'timelinePlayChange',
+                                        playState:params.playState
+                                    })
+                            })                           
 
                             function getOption(season_name_vars) {
                                 echarts.registerMap('world', jsonData);
@@ -163,9 +194,6 @@ z-index: 3;
                                 var text_line_width = 150;
                                 var text_right_width = width_auto * 2 / 9;
                                 var big_title_top = 165;
-                                var map_zoom = 1                  //地图 缩放比
-                                var map_size = width_auto * 0.35  //地图 宽度
-                                var map_location = ['50%', '65%'] //地图 中心点
                                 //////////////////////////////////////
                                 var gauge_location = [width_auto * 0.93, height_auto * 0.58] //仪表盘 中心坐标
                                 var gauge_size = 50  //仪表盘 半径
@@ -414,46 +442,6 @@ z-index: 3;
                                         y_category.push(y_value)
                                     }
 
-                                    ////////////////////
-                                    //世界地图块数据
-                                    var geo_data = [];
-                                    var geo_data_country = alasql("column of select  [10] FROM ? where [12]>0", [data_origin[i][0]]);
-                                    var geo_data_value = alasql("column of select [29] FROM ? where [12]>0", [data_origin[i][0]]);
-                                    var geo_data_extend_value = alasql("matrix of select [11],[17],[18],[19],[20],[29],[30],[31],[32],[33],[34],[0] FROM ? where [12]>0", [data_origin[i][0]]);
-                                    for (var m = 0; m < geo_data_country.length; m++) {
-
-                                        var country_data = {
-                                            date: distinct_date[i],
-                                            name: geo_data_country[m],
-                                            value: geo_data_value[m],
-                                            extend_data: geo_data_extend_value[m],
-                                            itemStyle: {
-                                                areaColor: '#5470C6'
-                                            }
-                                        };
-
-                                        geo_data.push(country_data)
-                                    };
-
-                                    //////////////////
-                                    //举办城市数据
-                                    var history_host_city = alasql("matrix of select distinct [6],[8],[9] from ? where [0]<" + "'" + distinct_date[i] + "'", [data])
-                                    var now_host_city = alasql("matrix of  select distinct [6],[7],[8],[9],[21] from ? where [0]=" + "'" + distinct_date[i] + "'", [data])
-                                    var history_data = [];
-
-
-                                    var now_data = [{
-                                        name: now_host_city[0],
-                                        value: [now_host_city[0][2], now_host_city[0][3], 100]
-                                    }]
-
-                                    for (var n = 0; n < history_host_city.length; n++) {
-                                        var history_city_data = {
-                                            name: history_host_city[n][0],
-                                            value: [history_host_city[n][1], history_host_city[n][2], 50]
-                                        }
-                                        history_data.push(history_city_data)
-                                    }
                                     //////////////////////////
                                     //文本块数据
                                     var host_country = alasql("column of select distinct [4] from ?", [data_origin[i][0]])
@@ -1408,28 +1396,6 @@ z-index: 3;
                                                 data: value1
                                             },
                                             {
-                                                name: 'World Statistic',
-                                                data: geo_data
-                                            },
-                                            {
-                                                name: '线路-历史',
-                                                type: 'lines',
-                                                data: move_lines_data
-                                            },
-                                            {
-                                                name: '线路-现在',
-                                                type: 'lines',
-                                                data: move_lines_data_now
-                                            },
-                                            {
-                                                name: 'now',
-                                                data: now_data
-                                            },
-                                            {
-                                                name: 'history',
-                                                data: history_data
-                                            },
-                                            {
                                                 name: 'gauge',
                                                 data: [{
                                                     value: male_percent
@@ -1924,250 +1890,8 @@ z-index: 3;
                                                 }
                                             },
                                         },
-                                        visualMap: {
-                                            type: 'piecewise',
-                                            left: 650,
-                                            top: '700',
-                                            itemWidth: 27,
-                                            itemHeight: 15,
-                                            textStyle: {
-                                                color: '#ffffff',
-                                                fontSize: 14,
-                                            }, seriesIndex: [0],
-                                            pieces: [
-                                                {
-
-                                                    min: 300,
-                                                    label: '>300',
-                                                }
-                                                , {
-                                                    max: 300,
-                                                    min: 150,
-                                                    label: '150-300',
-                                                }, {
-                                                    max: 150,
-                                                    min: 50,
-                                                    label: '50-150',
-                                                }, {
-                                                    max: 50,
-                                                    min: 0,
-                                                    label: '<50',
-                                                }, {
-                                                    value: 0,
-                                                    label: '无数据',
-                                                },],
-                                            inRange: {
-                                                color: ['#b3e5fc', '#81d4fa', '#29b6f6', '#5677fc', '#304ffe']
-                                            },
-                                            outOfRange: {
-                                                color: ['#999999']
-                                            }
-                                        },
-
-                                        geo: {
-                                            map: 'world',
-                                            zoom: map_zoom,
-                                            show: false,
-                                                                                        left:'33%',
-                                           right:'33%',
-                                           top:'50%',
-                                            bottom:'20%',
-                                            roam: false,
-                                            label: {
-                                                normal: {
-                                                    show: false,
-                                                },
-                                                emphasis: {
-                                                    show: false,
-                                                },
-                                            },
-
-                                            itemStyle: {
-
-                                                areaColor: '#5470C6',
-                                                borderColor: 'rgba(255,255,255,0.5)',
-
-                                                emphasis: {
-                                                    areaColor: '#2B91B7',
-                                                    label: {
-                                                        show: false
-                                                    }
-                                                }
-                                            }
-                                        },
 
                                         series: [
-
-                                            {
-                                                name: 'World Statistic',
-                                                type: 'map',
-                                                mapType: 'world',
-                                                                                          left:'33%',
-                                           right:'33%',
-                                           top:'50%',
-                                            bottom:'20%',
-                                                zoom: map_zoom,
-                                                //show: false,
-                                                roam: false,
-                                                tooltip: {
-                                                    show: true,
-                                                    backgroundColor: 'rgba(41,52,72)',
-                                                    formatter: function (params) {
-                                                        if (typeof (params.data) == "undefined") {
-                                                            return '';
-                                                        }
-                                                        else {
-                                                            var htmlItem1 = ''
-                                                            var htmlItem2 = ''
-                                                            var htmlItem3 = ''
-                                                            var htmlItem4 = ''
-                                                            htmlItem1 += '<div style="border-bottom: 1px solid rgba(255,255,255,.3); font-size: 18px;padding-bottom: 7px;margin-bottom: 7px;color:#000;">'
-                                                            htmlItem1 += '<span style="font-size: 24px;font-weight: bold;font-family:Microsoft YaHei;color:#18ffff;">' + params.data.extend_data[0] + '</span>:' + '<span style="font-size: 14px;font-weight: bold;font-family:Microsoft YaHei;color:#ffffff;">' + '&nbsp&nbsp&nbsp&nbsp' + params.data.extend_data[11] + '</span>:' + '<br>'
-
-                                                            htmlItem1 += '</div>'
-
-                                                            htmlItem2 += '<table>'
-                                                                + '<tr>'
-                                                                + '<td text-align:center">' + '<div style="border-bottom: 5px solid rgba(255,39,40,.3); font-size: 14px;font-weight: bold;font-family:Microsoft YaHei;padding-bottom: 7px;margin-bottom: 7px;color:rgba(255,39,40,.7);width:80px;">'
-                                                                + '奖牌数量' + '<br>'
-                                                                + '</div>'
-                                                            htmlItem2 += '<span style="font-size: 12px;color:#FFFFFF">' + '金牌:' + '&nbsp&nbsp&nbsp&nbsp' + params.data.extend_data[2] + '</span>' + '<br>'
-                                                            htmlItem2 += '<span style="font-size: 12px;color:#FFFFFF">' + '银牌:' + '&nbsp&nbsp&nbsp&nbsp' + params.data.extend_data[3] + '</span>' + '<br>'
-                                                            htmlItem2 += '<span style="font-size: 12px;color:#FFFFFF">' + '铜牌:' + '&nbsp&nbsp&nbsp&nbsp' + params.data.extend_data[4] + '</span>' + '<br>'
-                                                            htmlItem2 += '</td>'
-
-                                                            htmlItem3 += '<td>' + '<div style="border-bottom: 5px solid rgba(79,196,21,.3); font-size: 14px;font-weight: bold;font-family:Microsoft YaHei;padding-bottom: 7px;margin-bottom: 7px;color:rgba(79,196,21,.7);width:80px;">'
-                                                                + '运动员数' + '<br>'
-                                                                + '</div>'
-                                                            htmlItem3 += '<span style="font-size: 12px;color:#FFFFFF">' + '总数:' + '&nbsp&nbsp&nbsp&nbsp' + params.data.extend_data[5] + '</span>' + '<br>'
-                                                            htmlItem3 += '<span style="font-size: 12px;color:#FFFFFF">' + '女性:' + '&nbsp&nbsp&nbsp&nbsp' + params.data.extend_data[6] + '</span>' + '<br>'
-                                                            htmlItem3 += '<span style="font-size: 12px;color:#FFFFFF">' + '男性:' + '&nbsp&nbsp&nbsp&nbsp' + params.data.extend_data[7] + '</span>' + '<br>'
-                                                            htmlItem3 += '</td>'
-
-                                                            htmlItem4 += '<td>' + '<div style="border-bottom: 5px solid rgba(255,140,21,.3); font-size: 14px;font-weight: bold;font-family:Microsoft YaHei;padding-bottom: 7px;margin-bottom: 7px;color:rgba(255,140,21,.7);width:80px;">'
-                                                                + '平均数据' + '<br>'
-                                                                + '</div>'
-                                                            htmlItem4 += '<span style="font-size: 12px;color:#FFFFFF">' + '平均身高:' + '&nbsp' + params.data.extend_data[8].toFixed(1) + '</span>' + '<br>'
-                                                            htmlItem4 += '<span style="font-size: 12px;color:#FFFFFF">' + '平均体重:' + '&nbsp' + params.data.extend_data[9].toFixed(1) + '</span>' + '<br>'
-                                                            htmlItem4 += '<span style="font-size: 12px;color:#FFFFFF">' + '平均年龄:' + '&nbsp' + params.data.extend_data[10].toFixed(1) + '</span>' + '<br>'
-                                                            htmlItem4 += '</td>' + '</tr>' + '</table>'
-                                                            return htmlItem1 + htmlItem2 + htmlItem3 + htmlItem4;
-                                                        }
-                                                    }
-                                                },
-                                                showLegendSymbol: false,
-                                                itemStyle: {
-                                                    normal: {
-                                                        areaColor: '#D3D3D3',
-                                                        borderColor: 'rgba(255,255,255,0.5)'
-                                                    },
-                                                    emphasis: {
-                                                        areaColor: '#2B91B7',
-                                                        label: {
-                                                            show: false
-                                                        }
-                                                    }
-                                                }
-                                            },
-                                            {
-                                                tooltip: { show: false },
-                                                name: 'now',
-                                                type: 'scatter',
-                                                coordinateSystem: 'geo',
-                                                symbol: fire_symbol,
-                                                symbolSize: [80, 80],
-                                                symbolOffset: [0, -40],
-                                                label: {
-                                                    show: true,
-                                                    offset: [0, 20],
-                                                    textStyle: {
-                                                        color: '#ffffff',
-                                                        fontWeight: 'bold',
-                                                        fontSize: 10,
-                                                    },
-                                                    formatter(value) {
-                                                        return value.data.name[0];
-                                                    },
-                                                },
-                                                itemStyle: {
-                                                    opacity: 1
-                                                },
-                                                //showEffectOn: 'render',
-                                                rippleEffect: {
-                                                    brushType: 'stroke',
-                                                },
-                                                hoverAnimation: true,
-                                                zlevel: 5,
-
-                                            },
-
-                                            {
-                                                tooltip: { show: false },
-                                                name: '线路-历史',
-                                                type: 'lines',
-                                                coordinateSystem: 'geo',
-                                                zlevel: 2,
-                                                large: true,
-                                                effect: {
-                                                    show: true,
-                                                    constantSpeed: 15,
-                                                    trailLength: 0.05,
-                                                    color: '#64f2ff',
-                                                    symbol: history_symbol,//ECharts 提供的标记类型包括 'circle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow'
-                                                    symbolSize: 12,
-
-
-                                                },
-
-
-                                                lineStyle: {
-                                                    normal: {
-                                                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
-                                                            offset: 0, color: '#58B3CC'
-                                                        }, {
-                                                            offset: 1, color: '#F58158'
-                                                        }], false),
-                                                        width: 1,
-                                                        opacity: 0,
-                                                        curveness: 0.2
-                                                    }
-                                                },
-                                                zlevel: 4
-                                            },
-                                            {
-                                                tooltip: { show: false },
-                                                name: '线路-现在',
-                                                type: 'lines',
-                                                coordinateSystem: 'geo',
-                                                zlevel: 2,
-                                                large: true,
-                                                effect: {
-                                                    show: true,
-                                                    constantSpeed: 20,
-                                                    trailLength: 0.1,
-                                                    color: '#64f2ff',
-                                                    symbol: now_symbol,//ECharts 提供的标记类型包括 'circle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow'
-                                                    symbolSize: 20,
-
-
-                                                },
-
-
-                                                lineStyle: {
-                                                    normal: {
-                                                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
-                                                            offset: 0, color: '#58B3CC'
-                                                        }, {
-                                                            offset: 1, color: '#ff4500'
-                                                        }], false),
-                                                        width: 1,
-                                                        opacity: 0.6,
-                                                        curveness: 0.3
-                                                    }
-                                                },
-                                                zlevel: 3
-                                            },
-
                                             {
                                                 tooltip: { show: false },
                                                 name: 'bar1',
@@ -2203,42 +1927,6 @@ z-index: 3;
                                                 },
                                             },
 
-                                            {
-                                                tooltip: { show: false },
-                                                name: 'history',
-                                                type: 'effectScatter',
-                                                coordinateSystem: 'geo',
-                                                symbol: 'circle',
-                                                symbolSize: 2,
-
-                                                label: {
-                                                    normal: {
-                                                        show: true,
-                                                        textStyle: {
-                                                            color: '#ffffff',
-                                                            fontWeight: 'bold',
-                                                            fontSize: 10,
-                                                        },
-                                                        formatter(value) {
-                                                            return value.data.name;
-                                                        },
-                                                    },
-                                                },
-                                                labelLayout: { hideOverlap: true },
-                                                itemStyle: {
-                                                    borderWidth: 3,
-                                                    color: '#18ffff', //标志颜色
-
-                                                },
-                                                showEffectOn: 'render',
-                                                rippleEffect: {
-                                                    brushType: 'stroke',
-                                                    period: 7,
-                                                    scale: 26
-                                                },
-                                                hoverAnimation: true,
-                                                zlevel: 1,
-                                            },
                                             {
                                                 tooltip: { show: false },
                                                 type: 'gauge',
@@ -2850,6 +2538,7 @@ z-index: 3;
                                 return option
                             }
 
+
                             function getOption1() {
                                 var summer_icon = olympic_button_data.summer_icon
                                 var winter_icon = olympic_button_data.winter_icon
@@ -2995,14 +2684,549 @@ z-index: 3;
                                 return option
                             }
 
+                            function getOption3(season_name_vars) {
+                                echarts.registerMap('world', jsonData);
+                                
+                                var that = this;
+                                var width_auto = mychart4.getWidth();
+                                var height_auto = mychart4.getHeight();
+                                var map_zoom = 1                  //地图 缩放比
+                                var map_size = width_auto  //地图 宽度
+                                var map_location = ['50%', '50%'] //地图 中心点
 
+                                var Root_path = 'https://cdn.jsdelivr.net/gh/xiamian1012/echarts@store/'
+
+                                var fire_symbol = setting_data.fire_symbol
+                                var history_symbol = setting_data.history_symbol
+                                var history_symbol_new = setting_data.history_symbol_new
+                                var now_symbol = setting_data.now_symbol
+                                var image_data = setting_data.flag
+
+
+                                function switch_number(rownum) {
+                                    var color = [];
+                                    var label = [];
+                                    if (rownum >= 0) {
+                                        color = '#5af158'
+                                        label = '▲'
+                                    }
+                                    else if (rownum < 0) {
+                                        color = '#FF4500'
+                                        label = '▼'
+                                    }
+                                    return {
+                                        color: color,
+                                        label: label
+                                    }
+
+                                }
+
+
+
+                                //数据处理
+                                const data = alasql("matrix of select * from ? where [1]=" + "'" + season_name_vars + "'", [base_data]);
+                                var f_vs_m_year = alasql("column of select distinct [0] from ? order by [0]", [data])
+
+                                var f_vs_m_data = alasql("matrix of select distinct [0],[21],[22],[23] from ? order by [0]", [data])
+                                var date_Array = data[0].map(function (col, i) {
+                                    return data.map(function (row) {
+                                        return row[i];
+                                    })
+                                });
+                                var distinct_date = alasql(" column of select distinct [0] from ? order by [0]", [data])
+
+                                var distinct_text = alasql(" column of select distinct [3] from ? where [1]=" + "'" + season_name_vars + "' order by [0]", [base_data])
+
+                                unique(date_Array[0])
+                                function unique(arr) {
+                                    return Array.from(new Set(arr))
+                                };
+
+                                var data_origin = [];
+
+                                for (var i = 0; i < distinct_date.length; i++) {
+                                    var data_sub = [];
+                                    var data1 = [];
+
+                                    data1 = alasql("matrix of select * from ? where [0]=" + "'" + distinct_date[i] + "'order by [13] desc ", [data]) //
+
+
+                                    data_sub.push(data1)
+
+                                    data_origin.push(data_sub)
+                                }
+
+
+                                var options_data = []
+
+                                for (var i = 0; i < distinct_date.length; i++) {
+                                    ////////////////////
+                                    //世界地图块数据
+                                    var geo_data = [];
+                                    var geo_data_country = alasql("column of select  [10] FROM ? where [12]>0", [data_origin[i][0]]);
+                                    var geo_data_value = alasql("column of select [29] FROM ? where [12]>0", [data_origin[i][0]]);
+                                    var geo_data_extend_value = alasql("matrix of select [11],[17],[18],[19],[20],[29],[30],[31],[32],[33],[34],[0] FROM ? where [12]>0", [data_origin[i][0]]);
+                                    for (var m = 0; m < geo_data_country.length; m++) {
+
+                                        var country_data = {
+                                            date: distinct_date[i],
+                                            name: geo_data_country[m],
+                                            value: geo_data_value[m],
+                                            extend_data: geo_data_extend_value[m],
+                                            itemStyle: {
+                                                areaColor: '#5470C6'
+                                            }
+                                        };
+
+                                        geo_data.push(country_data)
+                                    };
+
+                                    //////////////////
+                                    //举办城市数据
+                                    var history_host_city = alasql("matrix of select distinct [6],[8],[9] from ? where [0]<" + "'" + distinct_date[i] + "'", [data])
+                                    var now_host_city = alasql("matrix of  select distinct [6],[7],[8],[9],[21] from ? where [0]=" + "'" + distinct_date[i] + "'", [data])
+                                    var history_data = [];
+
+
+                                    var now_data = [{
+                                        name: now_host_city[0],
+                                        value: [now_host_city[0][2], now_host_city[0][3], 100]
+                                    }]
+
+                                    for (var n = 0; n < history_host_city.length; n++) {
+                                        var history_city_data = {
+                                            name: history_host_city[n][0],
+                                            value: [history_host_city[n][1], history_host_city[n][2], 50]
+                                        }
+                                        history_data.push(history_city_data)
+                                    }
+                                    //////////////////////////
+                                    //动线数据
+                                    var move_line_origin = alasql("matrix of select distinct [6],[5],[28],[8],[9],[35],[36] from ? where [0]<" + "'" + distinct_date[i] + "'", [data])
+
+                                    var move_line_origin_now = alasql("matrix of select distinct [6],[5],[28],[8],[9],[35],[36] from ? where [0]=" + "'" + distinct_date[i] + "'", [data])
+
+
+                                    var move_lines_data = [];
+
+                                    for (let i = 0; i < move_line_origin.length; i++) {
+                                        var line_origin_data = {}
+                                        line_origin_data = {
+                                            fromName: move_line_origin[i][2],
+                                            toName: move_line_origin[i][1],
+                                            coords: [[move_line_origin[i][5], move_line_origin[i][6]], [move_line_origin[i][3], move_line_origin[i][4]]]
+                                        }
+                                        move_lines_data.push(line_origin_data)
+                                    }
+                                    var move_lines_data_now = [];
+                                    var line_origin_data_now = {}
+                                    line_origin_data_now = {
+                                        fromName: move_line_origin_now[0][2],
+                                        toName: move_line_origin_now[0][1],
+                                        coords: [[move_line_origin_now[0][5], move_line_origin_now[0][6]], [move_line_origin_now[0][3], move_line_origin_now[0][4]]]
+                                    }
+                                    move_lines_data_now.push(line_origin_data_now)
+
+
+
+                                    //动态数据
+                                    var option_data = {
+                                        series: [
+                                            {
+                                                name: 'World Statistic',
+                                                data: geo_data
+                                            },
+                                            {
+                                                name: '线路-历史',
+                                                type: 'lines',
+                                                data: move_lines_data
+                                            },
+                                            {
+                                                name: '线路-现在',
+                                                type: 'lines',
+                                                data: move_lines_data_now
+                                            },
+                                            {
+                                                name: 'now',
+                                                data: now_data
+                                            },
+                                            {
+                                                name: 'history',
+                                                data: history_data
+                                            }           
+                                        ]
+                                    };
+                                    options_data.push(option_data);
+
+                                }
+
+
+
+                                //图标设置
+                                var option = {
+                                    baseOption: {
+                                        tooltip: { show: true },
+                                        timeline: {
+                                            show:false,
+                                            tooltip: { show: false },
+                                            currentIndex: distinct_date.length - 1,
+                                            playInterval: 1000,
+                                            autoPlay: true,
+                                            data: distinct_date,
+                                            top: 280,
+                                            left: 700,
+                                            right: 700,
+                                            symbolSize: 5,
+                                            //symbol: 'pin',
+                                            label: { show: false },
+                                            itemStyle: { borderColor: '#ffffff' }
+                                        },
+                                        visualMap: {
+                                            type: 'piecewise',
+                                            show:true,
+                                        
+                                            itemWidth: 27,
+                                            itemHeight: 15,
+                                            textStyle: {
+                                                color: '#ffffff',
+                                                fontSize: 14,
+                                            }, seriesIndex: [0],
+                                            pieces: [
+                                                {
+
+                                                    min: 300,
+                                                    label: '>300',
+                                                }
+                                                , {
+                                                    max: 300,
+                                                    min: 150,
+                                                    label: '150-300',
+                                                }, {
+                                                    max: 150,
+                                                    min: 50,
+                                                    label: '50-150',
+                                                }, {
+                                                    max: 50,
+                                                    min: 0,
+                                                    label: '<50',
+                                                }, {
+                                                    value: 0,
+                                                    label: '无数据',
+                                                },],
+                                            inRange: {
+                                                color: ['#b3e5fc', '#81d4fa', '#29b6f6', '#5677fc', '#304ffe']
+                                            },
+                                            outOfRange: {
+                                                color: ['#999999']
+                                            }
+                                        },
+
+                                        geo: {
+                                            map: 'world',
+                                            zoom: map_zoom,
+                                            show: false,
+                                            layoutCenter: map_location,
+                                            layoutSize: map_size,
+                                            roam: false,
+                                            label: {
+                                                normal: {
+                                                    show: false,
+                                                },
+                                                emphasis: {
+                                                    show: false,
+                                                },
+                                            },
+
+                                            itemStyle: {
+
+                                                areaColor: '#5470C6',
+                                                borderColor: 'rgba(255,255,255,0.5)',
+
+                                                emphasis: {
+                                                    areaColor: '#2B91B7',
+                                                    label: {
+                                                        show: false
+                                                    }
+                                                }
+                                            }
+                                        },
+
+                                        series: [
+
+                                            {
+                                                name: 'World Statistic',
+                                                type: 'map',
+                                                mapType: 'world',
+                                                layoutCenter: map_location,
+                                                layoutSize: map_size,
+                                                zoom: map_zoom,
+                                                //show: false,
+                                                roam: false,
+                                                tooltip: {
+                                                    show: true,
+                                                    backgroundColor: 'rgba(41,52,72)',
+                                                    formatter: function (params) {
+                                                        if (typeof (params.data) == "undefined") {
+                                                            return '';
+                                                        }
+                                                        else {
+                                                            var htmlItem1 = ''
+                                                            var htmlItem2 = ''
+                                                            var htmlItem3 = ''
+                                                            var htmlItem4 = ''
+                                                            htmlItem1 += '<div style="border-bottom: 1px solid rgba(255,255,255,.3); font-size: 18px;padding-bottom: 7px;margin-bottom: 7px;color:#000;">'
+                                                            htmlItem1 += '<span style="font-size: 24px;font-weight: bold;font-family:Microsoft YaHei;color:#18ffff;">' + params.data.extend_data[0] + '</span>:' + '<span style="font-size: 14px;font-weight: bold;font-family:Microsoft YaHei;color:#ffffff;">' + '&nbsp&nbsp&nbsp&nbsp' + params.data.extend_data[11] + '</span>:' + '<br>'
+
+                                                            htmlItem1 += '</div>'
+
+                                                            htmlItem2 += '<table>'
+                                                                + '<tr>'
+                                                                + '<td text-align:center">' + '<div style="border-bottom: 5px solid rgba(255,39,40,.3); font-size: 14px;font-weight: bold;font-family:Microsoft YaHei;padding-bottom: 7px;margin-bottom: 7px;color:rgba(255,39,40,.7);width:80px;">'
+                                                                + '奖牌数量' + '<br>'
+                                                                + '</div>'
+                                                            htmlItem2 += '<span style="font-size: 12px;color:#FFFFFF">' + '金牌:' + '&nbsp&nbsp&nbsp&nbsp' + params.data.extend_data[2] + '</span>' + '<br>'
+                                                            htmlItem2 += '<span style="font-size: 12px;color:#FFFFFF">' + '银牌:' + '&nbsp&nbsp&nbsp&nbsp' + params.data.extend_data[3] + '</span>' + '<br>'
+                                                            htmlItem2 += '<span style="font-size: 12px;color:#FFFFFF">' + '铜牌:' + '&nbsp&nbsp&nbsp&nbsp' + params.data.extend_data[4] + '</span>' + '<br>'
+                                                            htmlItem2 += '</td>'
+
+                                                            htmlItem3 += '<td>' + '<div style="border-bottom: 5px solid rgba(79,196,21,.3); font-size: 14px;font-weight: bold;font-family:Microsoft YaHei;padding-bottom: 7px;margin-bottom: 7px;color:rgba(79,196,21,.7);width:80px;">'
+                                                                + '运动员数' + '<br>'
+                                                                + '</div>'
+                                                            htmlItem3 += '<span style="font-size: 12px;color:#FFFFFF">' + '总数:' + '&nbsp&nbsp&nbsp&nbsp' + params.data.extend_data[5] + '</span>' + '<br>'
+                                                            htmlItem3 += '<span style="font-size: 12px;color:#FFFFFF">' + '女性:' + '&nbsp&nbsp&nbsp&nbsp' + params.data.extend_data[6] + '</span>' + '<br>'
+                                                            htmlItem3 += '<span style="font-size: 12px;color:#FFFFFF">' + '男性:' + '&nbsp&nbsp&nbsp&nbsp' + params.data.extend_data[7] + '</span>' + '<br>'
+                                                            htmlItem3 += '</td>'
+
+                                                            htmlItem4 += '<td>' + '<div style="border-bottom: 5px solid rgba(255,140,21,.3); font-size: 14px;font-weight: bold;font-family:Microsoft YaHei;padding-bottom: 7px;margin-bottom: 7px;color:rgba(255,140,21,.7);width:80px;">'
+                                                                + '平均数据' + '<br>'
+                                                                + '</div>'
+                                                            htmlItem4 += '<span style="font-size: 12px;color:#FFFFFF">' + '平均身高:' + '&nbsp' + params.data.extend_data[8].toFixed(1) + '</span>' + '<br>'
+                                                            htmlItem4 += '<span style="font-size: 12px;color:#FFFFFF">' + '平均体重:' + '&nbsp' + params.data.extend_data[9].toFixed(1) + '</span>' + '<br>'
+                                                            htmlItem4 += '<span style="font-size: 12px;color:#FFFFFF">' + '平均年龄:' + '&nbsp' + params.data.extend_data[10].toFixed(1) + '</span>' + '<br>'
+                                                            htmlItem4 += '</td>' + '</tr>' + '</table>'
+                                                            return htmlItem1 + htmlItem2 + htmlItem3 + htmlItem4;
+                                                        }
+                                                    }
+                                                },
+                                                showLegendSymbol: false,
+                                                itemStyle: {
+                                                    normal: {
+                                                        areaColor: '#D3D3D3',
+                                                        borderColor: 'rgba(255,255,255,0.5)'
+                                                    },
+                                                    emphasis: {
+                                                        areaColor: '#2B91B7',
+                                                        label: {
+                                                            show: false
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                tooltip: { show: false },
+                                                name: 'now',
+                                                type: 'scatter',
+                                                coordinateSystem: 'geo',
+                                                symbol: fire_symbol,
+                                                symbolSize: [80, 80],
+                                                symbolOffset: [0, -40],
+                                                label: {
+                                                    show: true,
+                                                    offset: [0, 20],
+                                                    textStyle: {
+                                                        color: '#ffffff',
+                                                        fontWeight: 'bold',
+                                                        fontSize: 10,
+                                                    },
+                                                    formatter(value) {
+                                                        return value.data.name[0];
+                                                    },
+                                                },
+                                                itemStyle: {
+                                                    opacity: 1
+                                                },
+                                                //showEffectOn: 'render',
+                                                rippleEffect: {
+                                                    brushType: 'stroke',
+                                                },
+                                                hoverAnimation: true,
+                                                zlevel: 5,
+
+                                            },
+
+                                            {
+                                                tooltip: { show: false },
+                                                name: '线路-历史',
+                                                type: 'lines',
+                                                coordinateSystem: 'geo',
+                                                zlevel: 2,
+                                                large: true,
+                                                effect: {
+                                                    show: true,
+                                                    constantSpeed: 15,
+                                                    trailLength: 0.05,
+                                                    color: '#64f2ff',
+                                                    symbol: history_symbol,//ECharts 提供的标记类型包括 'circle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow'
+                                                    symbolSize: 12,
+
+
+                                                },
+
+
+                                                lineStyle: {
+                                                    normal: {
+                                                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+                                                            offset: 0, color: '#58B3CC'
+                                                        }, {
+                                                            offset: 1, color: '#F58158'
+                                                        }], false),
+                                                        width: 1,
+                                                        opacity: 0,
+                                                        curveness: 0.2
+                                                    }
+                                                },
+                                                zlevel: 4
+                                            },
+                                            {
+                                                tooltip: { show: false },
+                                                name: '线路-现在',
+                                                type: 'lines',
+                                                coordinateSystem: 'geo',
+                                                zlevel: 2,
+                                                large: true,
+                                                effect: {
+                                                    show: true,
+                                                    constantSpeed: 20,
+                                                    trailLength: 0.1,
+                                                    color: '#64f2ff',
+                                                    symbol: now_symbol,//ECharts 提供的标记类型包括 'circle', 'rect', 'roundRect', 'triangle', 'diamond', 'pin', 'arrow'
+                                                    symbolSize: 20,
+
+
+                                                },
+
+
+                                                lineStyle: {
+                                                    normal: {
+                                                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+                                                            offset: 0, color: '#58B3CC'
+                                                        }, {
+                                                            offset: 1, color: '#ff4500'
+                                                        }], false),
+                                                        width: 1,
+                                                        opacity: 0.6,
+                                                        curveness: 0.3
+                                                    }
+                                                },
+                                                zlevel: 3
+                                            },
+                                            {
+                                                tooltip: { show: false },
+                                                name: 'history',
+                                                type: 'effectScatter',
+                                                coordinateSystem: 'geo',
+                                                symbol: 'circle',
+                                                symbolSize: 2,
+
+                                                label: {
+                                                    normal: {
+                                                        show: true,
+                                                        textStyle: {
+                                                            color: '#ffffff',
+                                                            fontWeight: 'bold',
+                                                            fontSize: 10,
+                                                        },
+                                                        formatter(value) {
+                                                            return value.data.name;
+                                                        },
+                                                    },
+                                                },
+                                                labelLayout: { hideOverlap: true },
+                                                itemStyle: {
+                                                    borderWidth: 3,
+                                                    color: '#18ffff', //标志颜色
+
+                                                },
+                                                showEffectOn: 'render',
+                                                rippleEffect: {
+                                                    brushType: 'stroke',
+                                                    period: 7,
+                                                    scale: 26
+                                                },
+                                                hoverAnimation: true,
+                                                zlevel: 1,
+                                            },
+
+
+
+
+
+
+                                        ]
+                                    },
+                                    options: options_data
+                                };
+                                return option
+                            }
                         })
                     })
                 })
             })
+            $.getJSON('https://cdn.jsdelivr.net/gh/xiamian1012/echarts@store/json/population.json', function (jsonData) {
+                const mychart3 = echarts.init(document.getElementById('chart3'))
+                mychart3.setOption(getOption3())
+                function getOption3() {
+                    jsonData.filter(function (dataItem) {
+                        return dataItem[2] > 0;
+                    })
+                    jsonData.map(function (dataItem) {
+                        return [dataItem[0], dataItem[1], Math.sqrt(dataItem[2])];
+                    });
+                    option = {
+                        backgroundColor: 'transparent',
+                        visualMap: {
+                            show: false,
+                            min: 0,
+                            max: 60,
+                            inRange: {
+                                symbolSize: [0.5, 0.5],
+                            },
+                        },
+                        globe: {
+                            show: false,
+                            globeOuterRadius: 100,
+                            viewControl: {
 
+                            },
+
+                            light: {
+
+                                ambient: {
+                                    intensity: 100,
+                                },
+                            },
+                        },
+                        series: [
+                            {
+                                type: 'scatter3D',
+                                coordinateSystem: 'globe',
+                                // blendMode: 'lighter',
+                                symbolSize: 0.1,
+                                silent: true,
+                                itemStyle: {
+                                    color: '#00e5ff',
+                                    opacity: 0.3,
+                                },
+                                data: jsonData,
+                            },
+                        ],
+                    };
+                    return option
+                }
+            })
 
         }
+
 
     }
 })
